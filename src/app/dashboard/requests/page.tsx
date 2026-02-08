@@ -62,8 +62,10 @@ export default function RequestsPage() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>User Name</TableHead>
+                            <TableHead>Pilgrim Name</TableHead>
                             <TableHead>Email</TableHead>
+                            <TableHead>National ID</TableHead>
+                            <TableHead>Email Verified</TableHead>
                             <TableHead>Requested At</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
@@ -72,19 +74,27 @@ export default function RequestsPage() {
                     <TableBody>
                         {loading ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="text-center py-10">Loading...</TableCell>
+                                <TableCell colSpan={7} className="text-center py-10">Loading...</TableCell>
                             </TableRow>
                         ) : requests.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="text-center py-10">No pending requests</TableCell>
+                                <TableCell colSpan={7} className="text-center py-10">No pending requests</TableCell>
                             </TableRow>
                         ) : (
                             requests.map((req) => (
                                 <TableRow key={req._id}>
                                     <TableCell className="font-medium">
-                                        {req.user_id?.full_name || "Unknown User"}
+                                        {req.pilgrim_id?.full_name || "Unknown Pilgrim"}
                                     </TableCell>
-                                    <TableCell>{req.user_id?.email || "N/A"}</TableCell>
+                                    <TableCell>{req.pilgrim_id?.email || "N/A"}</TableCell>
+                                    <TableCell>{req.pilgrim_id?.national_id || "N/A"}</TableCell>
+                                    <TableCell>
+                                        {req.pilgrim_id?.email_verified ? (
+                                            <span className="text-green-600 font-medium">✓ Verified</span>
+                                        ) : (
+                                            <span className="text-red-600 font-medium">✗ Not Verified</span>
+                                        )}
+                                    </TableCell>
                                     <TableCell>{formatDate(req.created_at)}</TableCell>
                                     <TableCell className="capitalize">{req.status}</TableCell>
                                     <TableCell className="text-right">
