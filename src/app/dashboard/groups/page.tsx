@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Trash2, Users } from "lucide-react"
+import { Trash2, Users, Settings } from "lucide-react"
 import api from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import {
@@ -24,11 +24,37 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+
+interface Hotel {
+    _id: string
+    name: string
+}
+
+interface Bus {
+    _id: string
+    bus_number: string
+    destination: string
+}
 
 export default function GroupsPage() {
     const [groups, setGroups] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [deleteId, setDeleteId] = useState<string | null>(null)
+    const [hotels, setHotels] = useState<Hotel[]>([])
+    const [buses, setBuses] = useState<Bus[]>([])
+    const [resourceGroup, setResourceGroup] = useState<any | null>(null)
+    const [selectedHotelIds, setSelectedHotelIds] = useState<string[]>([])
+    const [selectedBusIds, setSelectedBusIds] = useState<string[]>([])
 
     const fetchGroups = async () => {
         try {
@@ -46,7 +72,49 @@ export default function GroupsPage() {
 
     useEffect(() => {
         fetchGroups()
+        const fetchResources = async () => {
+            try {
+                const [hotelsRes, busesRes] = await Promise.all([
+                    api.get('/hotels'),
+                    api.get('/buses')
+                ])
+                setHotels(hotelsRes.data?.data || [])
+                setBuses(busesRes.data?.data || [])
+            } catch (error) {
+                console.error(error)
+                toast.error('Failed to load hotels/buses')
+            }
+        }
+        void fetchResources()
     }, [])
+
+    const openResourceAssignment = (group: any) => {
+        setResourceGroup(group)
+        setSelectedHotelIds((group.assigned_hotel_ids || []).map((hotel: any) => hotel._id || hotel))
+        setSelectedBusIds((group.assigned_bus_ids || []).map((bus: any) => bus._id || bus))
+    }
+
+    const toggleId = (list: string[], id: string): string[] => {
+        if (list.includes(id)) return list.filter((item) => item !== id)
+        return [...list, id]
+    }
+
+    const saveResourceAssignment = async () => {
+        if (!resourceGroup) return
+        try {
+            const res = await api.put(`/groups/${resourceGroup._id}/resources`, {
+                hotel_ids: selectedHotelIds,
+                bus_ids: selectedBusIds,
+            })
+            if (res.data?.success) {
+                toast.success('Group resources updated')
+                setResourceGroup(null)
+                fetchGroups()
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to update group resources')
+        }
+    }
 
     const confirmDelete = async () => {
         if (!deleteId) return
@@ -105,14 +173,19 @@ export default function GroupsPage() {
                                     <TableCell>{group.pilgrim_ids?.length || 0}</TableCell>
                                     <TableCell>{formatDate(group.createdAt || group.created_at)}</TableCell>
                                     <TableCell className="text-right">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                            onClick={() => setDeleteId(group._id)}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                        <div className="flex items-center justify-end gap-1">
+                                            <Button variant="ghost" size="sm" onClick={() => openResourceAssignment(group)}>
+                                                <Settings className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                onClick={() => setDeleteId(group._id)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -137,6 +210,58 @@ export default function GroupsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <Dialog open={!!resourceGroup} onOpenChange={(open) => !open && setResourceGroup(null)}>
+                <DialogContent className="max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Assign Group Resources</DialogTitle>
+                        <DialogDescription>
+                            Choose which hotels and buses are available for moderators in {resourceGroup?.group_name}.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-2">
+                            <Label>Hotels</Label>
+                            <div className="space-y-2 rounded-md border p-3">
+                                {hotels.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">No hotels created yet.</p>
+                                ) : hotels.map((hotel) => (
+                                    <label key={hotel._id} className="flex items-center gap-2 text-sm">
+                                        <Checkbox
+                                            checked={selectedHotelIds.includes(hotel._id)}
+                                            onCheckedChange={() => setSelectedHotelIds((prev) => toggleId(prev, hotel._id))}
+                                        />
+                                        <span>{hotel.name}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Buses</Label>
+                            <div className="space-y-2 rounded-md border p-3">
+                                {buses.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">No buses created yet.</p>
+                                ) : buses.map((bus) => (
+                                    <label key={bus._id} className="flex items-center gap-2 text-sm">
+                                        <Checkbox
+                                            checked={selectedBusIds.includes(bus._id)}
+                                            onCheckedChange={() => setSelectedBusIds((prev) => toggleId(prev, bus._id))}
+                                        />
+                                        <span>{bus.bus_number} - {bus.destination}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setResourceGroup(null)}>Cancel</Button>
+                        <Button onClick={saveResourceAssignment}>Save</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
