@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Users, User, Shield, BarChart3, LogOut, Menu, Building2 } from "lucide-react"
+import { Users, User, Shield, BarChart3, LogOut, Menu, Building2, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -17,6 +17,7 @@ const sidebarItems = [
     { href: "/dashboard/groups", icon: Users, label: "Groups" },
     { href: "/dashboard/users", icon: User, label: "All Users" },
     { href: "/dashboard/resources", icon: Building2, label: "Resources" },
+    { href: "/dashboard/settings", icon: Settings, label: "Platform Settings" },
 ]
 
 export function Sidebar() {
