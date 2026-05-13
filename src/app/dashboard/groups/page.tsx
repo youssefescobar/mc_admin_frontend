@@ -302,14 +302,6 @@ export default function GroupsPage() {
                                 onChange={(e) => setGroupForm(s => ({ ...s, group_name: e.target.value }))}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label>Group Code</Label>
-                            <Input
-                                placeholder="eg. CAIRO2026"
-                                value={groupForm.group_code}
-                                onChange={(e) => setGroupForm(s => ({ ...s, group_code: e.target.value }))}
-                            />
-                        </div>
                     </div>
 
                     <DialogFooter>
