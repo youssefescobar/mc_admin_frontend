@@ -56,21 +56,10 @@ interface Bus {
   active: boolean
 }
 
-interface CategoryOption {
-  _id: string
-  category_key: string
-  label: string
-  value: string
-  active: boolean
-  sort_order: number
-  created_at: string
-}
-
 export default function ResourcesPage() {
   const [loading, setLoading] = useState(true)
   const [hotels, setHotels] = useState<Hotel[]>([])
   const [buses, setBuses] = useState<Bus[]>([])
-  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([])
 
   const [hotelForm, setHotelForm] = useState({ name: "", city: "", address: "", notes: "" })
   const [busForm, setBusForm] = useState({
@@ -82,7 +71,6 @@ export default function ResourcesPage() {
     seats_count: "50",
     notes: "",
   })
-  const [optionForm, setOptionForm] = useState({ category_key: "", label: "", sort_order: "0" })
 
   const [roomHotelId, setRoomHotelId] = useState<string>("")
   const [roomForm, setRoomForm] = useState({ room_number: "", floor: "", capacity: "1" })
@@ -92,26 +80,16 @@ export default function ResourcesPage() {
   const [openOption, setOpenOption] = useState(false)
   const [openRoom, setOpenRoom] = useState(false)
 
-  const groupedOptions = useMemo(() => {
-    return categoryOptions.reduce<Record<string, CategoryOption[]>>((acc, option) => {
-      if (!acc[option.category_key]) acc[option.category_key] = []
-      acc[option.category_key].push(option)
-      return acc
-    }, {})
-  }, [categoryOptions])
-
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const [hotelsRes, busesRes, optionsRes] = await Promise.all([
+      const [hotelsRes, busesRes] = await Promise.all([
         api.get("/hotels"),
         api.get("/buses"),
-        api.get("/categories/options"),
       ])
 
       setHotels(hotelsRes.data?.data || [])
       setBuses(busesRes.data?.data || [])
-      setCategoryOptions(optionsRes.data?.data || [])
     } catch (error) {
       console.error(error)
       toast.error("Failed to load resources")
@@ -161,23 +139,6 @@ export default function ResourcesPage() {
     }
   }
 
-  const createCategoryOption = async () => {
-    try {
-      await api.post("/categories/options", {
-        category_key: optionForm.category_key,
-        label: optionForm.label,
-        sort_order: Number(optionForm.sort_order),
-      })
-      toast.success("Category option created")
-      setOpenOption(false)
-      setOptionForm({ category_key: "", label: "", sort_order: "0" })
-      await fetchAll()
-    } catch (error: unknown) {
-      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
-      toast.error(message || "Failed to create category option")
-    }
-  }
-
   const addRoom = async () => {
     if (!roomHotelId) {
       toast.error("Please choose a hotel first")
@@ -221,16 +182,6 @@ export default function ResourcesPage() {
     }
   }
 
-  const deleteCategoryOption = async (id: string) => {
-    try {
-      await api.delete(`/categories/options/${id}`)
-      toast.success("Category option deleted")
-      await fetchAll()
-    } catch {
-      toast.error("Failed to delete category option")
-    }
-  }
-
   const removeRoom = async (hotelId: string, roomId: string) => {
     try {
       await api.delete(`/hotels/${hotelId}/rooms/${roomId}`)
@@ -258,10 +209,18 @@ export default function ResourcesPage() {
               <DialogDescription>Create a reusable hotel profile and then add rooms.</DialogDescription>
             </DialogHeader>
             <div className="space-y-3 py-2">
-              <div><Label>Name</Label><Input value={hotelForm.name} onChange={(e) => setHotelForm((s) => ({ ...s, name: e.target.value }))} /></div>
-              <div><Label>City</Label><Input value={hotelForm.city} onChange={(e) => setHotelForm((s) => ({ ...s, city: e.target.value }))} /></div>
-              <div><Label>Address</Label><Input value={hotelForm.address} onChange={(e) => setHotelForm((s) => ({ ...s, address: e.target.value }))} /></div>
-              <div><Label>Notes</Label><Input value={hotelForm.notes} onChange={(e) => setHotelForm((s) => ({ ...s, notes: e.target.value }))} /></div>
+              <div className="space-y-2">
+                <Label>Name</Label>
+                <Input value={hotelForm.name} onChange={(e) => setHotelForm((s) => ({ ...s, name: e.target.value }))} /></div>
+              <div className="space-y-2">
+                <Label>City</Label>
+                <Input value={hotelForm.city} onChange={(e) => setHotelForm((s) => ({ ...s, city: e.target.value }))} /></div>
+              <div className="space-y-2">
+                <Label>Address</Label>
+                <Input value={hotelForm.address} onChange={(e) => setHotelForm((s) => ({ ...s, address: e.target.value }))} /></div>
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Input value={hotelForm.notes} onChange={(e) => setHotelForm((s) => ({ ...s, notes: e.target.value }))} /></div>
             </div>
             <DialogFooter><Button onClick={createHotel}>Save Hotel</Button></DialogFooter>
           </DialogContent>
@@ -277,7 +236,7 @@ export default function ResourcesPage() {
               <DialogDescription>Attach a room to an existing hotel.</DialogDescription>
             </DialogHeader>
             <div className="space-y-3 py-2">
-              <div>
+              <div className="space-y-2">
                 <Label>Hotel</Label>
                 <Select value={roomHotelId} onValueChange={setRoomHotelId}>
                   <SelectTrigger><SelectValue placeholder="Select hotel" /></SelectTrigger>
@@ -288,9 +247,15 @@ export default function ResourcesPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label>Room Number</Label><Input value={roomForm.room_number} onChange={(e) => setRoomForm((s) => ({ ...s, room_number: e.target.value }))} /></div>
-              <div><Label>Floor</Label><Input value={roomForm.floor} onChange={(e) => setRoomForm((s) => ({ ...s, floor: e.target.value }))} /></div>
-              <div><Label>Capacity</Label><Input type="number" min="1" value={roomForm.capacity} onChange={(e) => setRoomForm((s) => ({ ...s, capacity: e.target.value }))} /></div>
+              <div className="space-y-2">
+                <Label>Room Number</Label>
+                <Input value={roomForm.room_number} onChange={(e) => setRoomForm((s) => ({ ...s, room_number: e.target.value }))} /></div>
+              <div className="space-y-2">
+                <Label>Floor</Label>
+                <Input value={roomForm.floor} onChange={(e) => setRoomForm((s) => ({ ...s, floor: e.target.value }))} /></div>
+              <div className="space-y-2">
+                <Label>Capacity</Label>
+                <Input type="number" min="1" value={roomForm.capacity} onChange={(e) => setRoomForm((s) => ({ ...s, capacity: e.target.value }))} /></div>
             </div>
             <DialogFooter><Button onClick={addRoom}>Save Room</Button></DialogFooter>
           </DialogContent>
@@ -306,31 +271,29 @@ export default function ResourcesPage() {
               <DialogDescription>Create a reusable bus schedule/profile.</DialogDescription>
             </DialogHeader>
             <div className="space-y-3 py-2">
-              <div><Label>Bus Number</Label><Input value={busForm.bus_number} onChange={(e) => setBusForm((s) => ({ ...s, bus_number: e.target.value }))} /></div>
-              <div><Label>Driver Name</Label><Input value={busForm.driver_name} onChange={(e) => setBusForm((s) => ({ ...s, driver_name: e.target.value }))} /></div>
-              <div><Label>Destination</Label><Input value={busForm.destination} onChange={(e) => setBusForm((s) => ({ ...s, destination: e.target.value }))} /></div>
-              <div><Label>Departure Time</Label><Input type="datetime-local" value={busForm.departure_time} onChange={(e) => setBusForm((s) => ({ ...s, departure_time: e.target.value }))} /></div>
-              <div><Label>Seats</Label><Input type="number" min="1" value={busForm.seats_count} onChange={(e) => setBusForm((s) => ({ ...s, seats_count: e.target.value }))} /></div>
+              <div className="space-y-2">
+                <Label>Bus Number</Label>
+                <Input value={busForm.bus_number} onChange={(e) => setBusForm((s) => ({ ...s, bus_number: e.target.value }))} /></div>
+              <div className="space-y-2">
+                <Label>Driver Name</Label>
+                <Input value={busForm.driver_name} onChange={(e) => setBusForm((s) => ({ ...s, driver_name: e.target.value }))} /></div>
+              <div className="space-y-2">
+                <Label>Destination</Label>
+                <Input value={busForm.destination} onChange={(e) => setBusForm((s) => ({ ...s, destination: e.target.value }))} /></div>
+              <div className="space-y-2">
+                <Label>Departure Time</Label>
+                <Input type="datetime-local" value={busForm.departure_time} onChange={(e) => setBusForm((s) => ({ ...s, departure_time: e.target.value }))} /></div>
+              <div className="space-y-2">
+                <Label>Plate Number</Label>
+                <Input placeholder="Optional" value={busForm.plate_number} onChange={(e) => setBusForm((s) => ({ ...s, plate_number: e.target.value }))} /></div>
+              <div className="space-y-2">
+                <Label>Seats</Label>
+                <Input type="number" min="1" value={busForm.seats_count} onChange={(e) => setBusForm((s) => ({ ...s, seats_count: e.target.value }))} /></div>
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Input placeholder="Optional details..." value={busForm.notes} onChange={(e) => setBusForm((s) => ({ ...s, notes: e.target.value }))} /></div>
             </div>
             <DialogFooter><Button onClick={createBus}>Save Bus</Button></DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={openOption} onOpenChange={setOpenOption}>
-          <DialogTrigger asChild>
-            <Button variant="outline"><Plus className="mr-2 h-4 w-4" />Create Category Option</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Category Option</DialogTitle>
-              <DialogDescription>Add reusable dropdown values (for example: medical_priority).</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3 py-2">
-              <div><Label>Category Key</Label><Input placeholder="medical_priority" value={optionForm.category_key} onChange={(e) => setOptionForm((s) => ({ ...s, category_key: e.target.value }))} /></div>
-              <div><Label>Label</Label><Input placeholder="High Risk" value={optionForm.label} onChange={(e) => setOptionForm((s) => ({ ...s, label: e.target.value }))} /></div>
-              <div><Label>Sort Order</Label><Input type="number" value={optionForm.sort_order} onChange={(e) => setOptionForm((s) => ({ ...s, sort_order: e.target.value }))} /></div>
-            </div>
-            <DialogFooter><Button onClick={createCategoryOption}>Save Option</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
@@ -417,29 +380,6 @@ export default function ResourcesPage() {
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader><CardTitle>Category Options (Reusable Dropdowns)</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          {Object.keys(groupedOptions).length === 0 ? (
-            <p className="text-sm text-muted-foreground">No category options yet.</p>
-          ) : Object.entries(groupedOptions).map(([key, options]) => (
-            <div key={key} className="rounded-md border p-3">
-              <p className="mb-2 text-sm font-semibold">{key}</p>
-              <div className="space-y-2">
-                {options.map((option) => (
-                  <div key={option._id} className="flex items-center justify-between rounded border px-3 py-2">
-                    <p className="text-sm">{option.label} ({option.value})</p>
-                    <Button variant="ghost" size="icon" onClick={() => void deleteCategoryOption(option._id)}>
-                      <Trash2 className="h-4 w-4 text-red-600" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Trash2, Users, Settings } from "lucide-react"
+import { Trash2, Users, Settings, Plus } from "lucide-react"
 import api from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import {
@@ -33,6 +33,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 
 interface Hotel {
@@ -55,6 +56,23 @@ export default function GroupsPage() {
     const [resourceGroup, setResourceGroup] = useState<any | null>(null)
     const [selectedHotelIds, setSelectedHotelIds] = useState<string[]>([])
     const [selectedBusIds, setSelectedBusIds] = useState<string[]>([])
+
+    const [createGroupDialog, setCreateGroupDialog] = useState(false)
+    const [groupForm, setGroupForm] = useState({ group_name: '' })
+
+    const createGroup = async () => {
+        try {
+            const res = await api.post('/groups', groupForm)
+            if (res.data?.success) {
+                toast.success('Group created successfully')
+                setCreateGroupDialog(false)
+                setGroupForm({ group_name: '' })
+                fetchGroups()
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to create group')
+        }
+    }
 
     const fetchGroups = async () => {
         try {
@@ -136,6 +154,9 @@ export default function GroupsPage() {
         <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold tracking-tight">Active Groups</h1>
+                <Button onClick={() => setCreateGroupDialog(true)}>
+                    <Plus className="mr-2 h-4 w-4" /> Create Group
+                </Button>
             </div>
 
             <div className="rounded-md border bg-white">
@@ -259,6 +280,41 @@ export default function GroupsPage() {
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setResourceGroup(null)}>Cancel</Button>
                         <Button onClick={saveResourceAssignment}>Save</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={createGroupDialog} onOpenChange={setCreateGroupDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Create Group</DialogTitle>
+                        <DialogDescription>
+                            Create a new group for pilgrims. A unique 6-character joining code will be automatically generated.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-2">
+                            <Label>Group Name</Label>
+                            <Input
+                                placeholder="eg. Cairo Trip A"
+                                value={groupForm.group_name}
+                                onChange={(e) => setGroupForm(s => ({ ...s, group_name: e.target.value }))}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Group Code</Label>
+                            <Input
+                                placeholder="eg. CAIRO2026"
+                                value={groupForm.group_code}
+                                onChange={(e) => setGroupForm(s => ({ ...s, group_code: e.target.value }))}
+                            />
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setCreateGroupDialog(false)}>Cancel</Button>
+                        <Button onClick={createGroup}>Create</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

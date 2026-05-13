@@ -2,19 +2,20 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Users, UserPlus, Shield, BarChart3, LogOut, Menu, Building2 } from "lucide-react"
+import { Users, User, Shield, BarChart3, LogOut, Menu, Building2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Cookies from "js-cookie"
 import { useRouter } from "next/navigation"
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
+import { SheetTitle } from "@/components/ui/sheet"
 
 const sidebarItems = [
     { href: "/dashboard", icon: BarChart3, label: "Overview" },
     { href: "/dashboard/moderators", icon: Shield, label: "Moderators" },
-    { href: "/dashboard/requests", icon: UserPlus, label: "Requests" },
-    { href: "/dashboard/groups", icon: Shield, label: "Groups" },
-    { href: "/dashboard/users", icon: Users, label: "All Users" },
+    { href: "/dashboard/groups", icon: Users, label: "Groups" },
+    { href: "/dashboard/users", icon: User, label: "All Users" },
     { href: "/dashboard/resources", icon: Building2, label: "Resources" },
 ]
 
@@ -74,6 +75,9 @@ export function MobileSidebar() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
+                <VisuallyHidden>
+                    <SheetTitle>Navigation Menu</SheetTitle>
+                </VisuallyHidden>
                 <Sidebar />
             </SheetContent>
         </Sheet>
